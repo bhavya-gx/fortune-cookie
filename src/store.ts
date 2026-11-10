@@ -1,5 +1,6 @@
 // Tiny JSON-file store. Everything the bot remembers lives in ./data so users
 // can read it (that is the point: nothing hidden).
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -10,6 +11,20 @@ export interface PredictionLog {
   kind: "fortune" | "weekly";
   question: string;
   text: string;
+}
+
+// One line per first sighting, written to data/events.jsonl. Powers `npm run stats`.
+// Chat and person IDs are one-way hashes, so the file holds no phone numbers.
+export interface GrowthEvent {
+  at: string; // ISO time
+  type: "new_chat" | "new_person";
+  id: string; // hash of the chat guid or the handle
+  group: boolean | null; // null when unknown
+  via?: string; // new_person only: hash of the chat they first appeared in
+}
+
+export function shortHash(value: string): string {
+  return crypto.createHash("sha256").update(value).digest("hex").slice(0, 12);
 }
 
 interface State {
@@ -36,11 +51,13 @@ export class Store {
   private state: State;
   private logPath: string;
   private statePath: string;
+  private eventsPath: string;
 
   constructor(dir: string | null) {
     this.state = structuredClone(EMPTY);
     this.statePath = dir ? path.join(dir, "state.json") : "";
     this.logPath = dir ? path.join(dir, "predictions.jsonl") : "";
+    this.eventsPath = dir ? path.join(dir, "events.jsonl") : "";
     if (dir) {
       fs.mkdirSync(dir, { recursive: true });
       if (fs.existsSync(this.statePath)) {
@@ -144,12 +161,22 @@ export class Store {
     return chat in this.state.chats;
   }
 
-  seen(chat: string, handle: string) {
+  seen(chat: string, handle: string, isGroup?: boolean) {
+    const newChat = !(chat in this.state.chats);
+    const newPerson = !Object.values(this.state.chats).some((list) => list.includes(handle));
     const list = (this.state.chats[chat] ??= []);
     if (!list.includes(handle)) {
       list.push(handle);
       this.save();
     }
+    const group = isGroup ?? (chat.includes(";+;") ? true : chat.includes(";-;") ? false : null);
+    const at = new Date().toISOString();
+    if (newChat) this.growth({ at, type: "new_chat", id: shortHash(chat), group });
+    if (newPerson) this.growth({ at, type: "new_person", id: shortHash(handle), group, via: shortHash(chat) });
+  }
+
+  private growth(event: GrowthEvent) {
+    if (this.eventsPath) fs.appendFileSync(this.eventsPath, JSON.stringify(event) + "\n");
   }
 
   chatGuids(): string[] {

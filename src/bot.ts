@@ -84,7 +84,7 @@ export function createBot(deps: BotDeps) {
   async function handle(msg: Incoming): Promise<string | null> {
     if (msg.fromMe) return null;
     const fresh = !store.knowsChat(msg.chat);
-    store.seen(msg.chat, msg.handle);
+    store.seen(msg.chat, msg.handle, msg.isGroup);
 
     // First message in a new group: say hi, like a new friend joining.
     if (dedicated && fresh && msg.isGroup) return WELCOME_GROUP;

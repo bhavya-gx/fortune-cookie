@@ -76,6 +76,20 @@ Without a key it uses a built-in deck of happy fortunes. Set `ANTHROPIC_API_KEY`
 
 - **BlueBubbles:** `npm start` runs a webhook server for [BlueBubbles](https://bluebubbles.app). `scripts/verify-bluebubbles.ts` checks the connection.
 
+## Measure your own bot
+
+```bash
+npm run stats            # last 14 days
+npm run stats -- --days 30
+npm run stats -- --json
+```
+
+It reads `data/` on your Mac and prints counts only: people who texted it, chats (groups versus direct), how many asked for a fortune, groups where two or more people asked, and who came back on another day. Numbers in `UNLIMITED_PHONES` are left out so your own testing does not inflate it.
+
+New people and new chats are counted from the first message after you update. The bot writes one line per first sighting to `data/events.jsonl`, using one-way hashes instead of phone numbers. Nothing leaves your Mac, and there is no telemetry.
+
+Apple gives bots no "was added to a group" event. A group counts once someone in it sends a message the bot can see, and a group where nobody ever types a trigger is invisible.
+
 ## Tests
 
 ```bash

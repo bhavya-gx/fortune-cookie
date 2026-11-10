@@ -99,9 +99,9 @@ npm run stats -- --json
 
 It reads `data/` on your Mac and prints counts only: people who texted it, chats (groups versus direct), how many asked for a fortune, groups where two or more people asked, and who came back on another day. Numbers in `UNLIMITED_PHONES` are left out so your own testing does not inflate it.
 
-New people and new chats are counted from the first message after you update. The bot writes one line per first sighting to `data/events.jsonl`, using one-way hashes instead of phone numbers. Nothing leaves your Mac, and there is no telemetry.
+New people and new chats are counted from the first message after you update. The bot writes one line per first sighting to `data/events.jsonl`, using hashes keyed with a random secret kept on your Mac, instead of phone numbers. Nothing leaves your Mac, and there is no telemetry.
 
-Apple gives bots no "was added to a group" event. A group counts once someone in it sends a message the bot can see, and a group where nobody ever types a trigger is invisible.
+Apple gives bots no "was added to a group" event. A person or chat counts once they use a trigger (on a personal Apple ID the bot records nothing about chats that never do).
 
 ## Tests
 

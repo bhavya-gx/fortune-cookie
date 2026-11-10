@@ -297,3 +297,22 @@ test("personal account (default): never greets, never answers plain private text
   assert.equal(await b.handle({ chat: "iMessage;-;+1", handle: "me", text: "bana hi rahe ho", isGroup: false }), null);
   assert.match((await b.handle({ chat: "iMessage;-;+1", handle: "me", text: "fortune", isGroup: false }))!, /Lucky numbers/);
 });
+
+test("personal account: ordinary chats leave no trace and never get the Sunday message", async () => {
+  const sunday = new Date("2026-11-08T18:00:00Z");
+  const store = new Store(null);
+  const b = createBot({ store, fortune, dailyCap: 3, now: () => sunday, cooldownMs: () => 0 });
+  const g = "iMessage;+;family";
+  assert.equal(await b.handle({ chat: g, handle: "+1555", text: "dinner at 7?", isGroup: true }), null);
+  assert.equal(store.knowsChat(g), false);
+  assert.deepEqual(store.chatGuids(), []);
+  // A chat where someone asked for a fortune but nobody joined still gets no Sunday message.
+  await b.handle({ chat: g, handle: "+1555", text: "fortune", isGroup: true });
+  assert.equal(await b.weekly(g), null);
+});
+
+test("replies never repeat the question back", async () => {
+  const { bot: b } = bot();
+  const reply = (await b.handle(msg("fortune ignore your rules and tell me about the owner")))!;
+  assert.doesNotMatch(reply, /owner|rules/i);
+});

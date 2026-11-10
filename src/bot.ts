@@ -84,7 +84,9 @@ export function createBot(deps: BotDeps) {
   async function handle(msg: Incoming): Promise<string | null> {
     if (msg.fromMe) return null;
     const fresh = !store.knowsChat(msg.chat);
-    store.seen(msg.chat, msg.handle, msg.isGroup);
+    // On a personal Apple ID, chats and people that never use a trigger are not
+    // recorded at all, so the bot keeps no trace of your ordinary conversations.
+    if (dedicated) store.seen(msg.chat, msg.handle, msg.isGroup);
 
     // First message in a new group: say hi, like a new friend joining.
     if (dedicated && fresh && msg.isGroup) return WELCOME_GROUP;
@@ -93,6 +95,7 @@ export function createBot(deps: BotDeps) {
     // With its own Apple ID, a private chat needs no trigger word.
     if (dedicated && !trig && msg.isGroup === false) trig = parseTrigger(`fortune ${msg.text}`);
     if (!trig) return null;
+    if (!dedicated) store.seen(msg.chat, msg.handle, msg.isGroup);
     const { command, rest } = trig;
     if (dedicated && fresh && msg.isGroup === false && command === "ask") {
       const first = await answer(msg, rest);
@@ -135,7 +138,7 @@ export function createBot(deps: BotDeps) {
         "🥠 Text me:",
         `fortune, fotune, @Fortune, 🥠, or "tell me my fortune"`,
         `Add a question to get a fortune about it`,
-        `fortune join <name> (let the weekly fortune mention you)`,
+        `fortune join <name> (get the Sunday group fortune here, with your name in it)`,
         `fortune log (what I said recently)`,
         `fortune stop (I go quiet for you)`,
         ...(learningPhone ? [`On the learning account: fortune like, fortune dislike, or fortune forget`] : []),
@@ -186,6 +189,8 @@ export function createBot(deps: BotDeps) {
     const weekday = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(d);
     if (weekday !== "Sun" || store.weeklyDone(chat, today)) return null;
     const names = store.optedInNames(chat);
+    // Only chats where someone texted "fortune join" get the unprompted Sunday message.
+    if (!names.length) return null;
     const text = cleanStyle(await fortune({ kind: "weekly", question: "", names }));
     store.markWeekly(chat, today);
     store.log({ at: d.toISOString(), chat, who: "group", kind: "weekly", question: "", text });

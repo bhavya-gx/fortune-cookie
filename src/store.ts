@@ -23,8 +23,10 @@ export interface GrowthEvent {
   via?: string; // new_person only: hash of the chat they first appeared in
 }
 
-export function shortHash(value: string): string {
-  return crypto.createHash("sha256").update(value).digest("hex").slice(0, 12);
+// Keyed with a random per-install secret (kept in state.json), so a hash cannot be
+// reversed by hashing every possible phone number.
+export function shortHash(value: string, secret = ""): string {
+  return crypto.createHmac("sha256", secret).update(value).digest("hex").slice(0, 12);
 }
 
 interface State {
@@ -43,9 +45,11 @@ interface State {
   chats: Record<string, string[]>;
   // chat guid -> local date of the last weekly drop
   lastWeekly: Record<string, string>;
+  // random secret that keys the hashes in events.jsonl
+  hashSecret: string;
 }
 
-const EMPTY: State = { usage: {}, capCohort: {}, customFortuneIndex: 0, categoryFeedback: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {} };
+const EMPTY: State = { usage: {}, capCohort: {}, customFortuneIndex: 0, categoryFeedback: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {}, hashSecret: "" };
 
 export class Store {
   private state: State;
@@ -171,8 +175,13 @@ export class Store {
     }
     const group = isGroup ?? (chat.includes(";+;") ? true : chat.includes(";-;") ? false : null);
     const at = new Date().toISOString();
-    if (newChat) this.growth({ at, type: "new_chat", id: shortHash(chat), group });
-    if (newPerson) this.growth({ at, type: "new_person", id: shortHash(handle), group, via: shortHash(chat) });
+    if ((newChat || newPerson) && !this.state.hashSecret) {
+      this.state.hashSecret = crypto.randomBytes(16).toString("hex");
+      this.save();
+    }
+    const hash = (v: string) => shortHash(v, this.state.hashSecret);
+    if (newChat) this.growth({ at, type: "new_chat", id: hash(chat), group });
+    if (newPerson) this.growth({ at, type: "new_person", id: hash(handle), group, via: hash(chat) });
   }
 
   private growth(event: GrowthEvent) {

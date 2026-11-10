@@ -29,8 +29,8 @@ Type `fortune will saturday be fun?`. Use `/as maya` to switch person and `/quit
 
 | Text | What happens |
 | --- | --- |
-| `fortune` or `🥠` | A happy fortune |
-| `fortune <question>` | A fortune about your question |
+| `fortune`, `fotune`, `@Fortune`, or `🥠` | A happy fortune, even when the trigger appears inside a message |
+| `tell me my fortune` or a trigger plus a question | A fortune about your question |
 | `fortune join <name>` | You are included in the Sunday group fortune |
 | `fortune log` | The last 5 things it said in this chat |
 | `fortune stop` / `fortune resume` | It goes quiet for you, or comes back |
@@ -40,7 +40,7 @@ Type `fortune will saturday be fun?`. Use `/as maya` to switch person and `/quit
 
 1. **Make an Apple ID for the bot** at account.apple.com, for example `yourcookie@icloud.com`.
 2. **Sign the Mac's Messages app into it.** Messages > Settings > iMessage. If you sign out your own account, your texts stop arriving on that Mac, so a spare Mac or a second macOS user is best.
-3. **Give it a name and photo.** Messages > Settings > General > Share Name and Photo. Name: Fortune Cookie. Photo: `brand/logo.png`.
+3. **Set the sender identity.** In Messages > Settings > General > Share Name and Photo, set the name to **Fortune Cookie**, choose `brand/logo.png` (the square cookie avatar on white), and turn on name and photo sharing. Use the bot's dedicated Apple ID so the identity is consistent across its chats.
 4. **Allow Terminal to read Messages.** System Settings > Privacy & Security > Full Disk Access > turn on Terminal, then reopen Terminal.
 5. **Configure and start:**
    ```bash
@@ -52,11 +52,16 @@ Type `fortune will saturday be fun?`. Use `/as maya` to switch person and `/quit
    ```
    Approve the prompt that lets Terminal control Messages. Keep the Mac awake with `caffeinate -s &`.
 
-`BOT_ACCOUNT=personal` (the default) is for running it on your own Apple ID: it then only answers messages that start with `fortune` or 🥠, and never greets groups or replies to ordinary texts.
+`BOT_ACCOUNT=personal` (the default) is for running it on your own Apple ID: it answers messages containing a fortune trigger and never greets groups or replies to ordinary texts.
+
+Apple controls how this identity appears on each recipient's device. Recipients may see the phone number until they accept the shared contact photo, have the bot saved as a contact, or enable name and photo sharing; the bot cannot force every iPhone to replace a number with “Fortune Cookie.”
 
 ## Daily cap and guardrails
 
-- 3 fortunes per person per day. `DAILY_CAP` changes it, `0` means unlimited.
+- The first five people to request a fortune get up to 6 per day. Other users follow `DAILY_CAP` (default 3); `0` means unlimited for everyone. Two designated phone numbers are always unlimited.
+- Each user has a randomized 5–10 second cooldown between generated fortunes.
+- Seven custom fortunes are served once each, in order, before the configured AI (or built-in deck) takes over. The shared deck position persists in `data/state.json`.
+- The designated learning account can reply `fortune like` or `fortune dislike` after a fortune to tune future category choices; `fortune forget` clears that profile. This records explicit category feedback, not conversation text.
 - Fortunes are always positive. Health, money, legal and death questions get a kind refusal before any AI call.
 - It only names people who texted `fortune join`. `fortune stop` works for anyone.
 - Everything it says is logged to `data/predictions.jsonl` on your Mac.

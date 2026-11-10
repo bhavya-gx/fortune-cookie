@@ -44,7 +44,7 @@ test("polls only new messages, reads both text forms, skips its own replies", ()
   assert.deepEqual(mac.poll(), [
     { chat: "iMessage;+;chat42", handle: "+15550001", text: "fortune", isGroup: true },
     { chat: "iMessage;+;chat42", handle: "+15550001", text: "fortune will it rain", isGroup: true },
-    { chat: "iMessage;+;chat42", handle: "me", text: "fortune from the owner", isGroup: true },
+    { chat: "iMessage;+;chat42", handle: "me", text: "fortune from the owner", fromMe: true, isGroup: true },
   ]);
   assert.deepEqual(mac.poll(), []);
   assert.deepEqual(mac.groups(), [{ guid: "iMessage;+;chat42", name: "Besties" }]);

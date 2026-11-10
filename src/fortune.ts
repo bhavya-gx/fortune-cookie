@@ -9,6 +9,7 @@ export interface FortuneRequest {
   kind: "fortune" | "weekly";
   question: string; // what the person asked ("" for a plain "fortune")
   names?: string[]; // only people who opted in (weekly drop)
+  preferences?: { liked: string[]; disliked: string[] };
 }
 
 export type Fortune = (req: FortuneRequest) => Promise<string>;
@@ -41,6 +42,8 @@ const WEEKLY = [
   "this week the stars say: touch grass together, then report back.",
 ];
 
+const CATEGORIES = ["career", "love", "bright ideas", "friendship", "chaotic energy", "small joys"];
+
 function luckyNumbers(): string {
   const n = new Set<number>();
   while (n.size < 3) n.add(1 + Math.floor(Math.random() * 49));
@@ -54,13 +57,22 @@ function pick<T>(arr: T[]): T {
 export function offlineFortune(req: FortuneRequest): string {
   if (req.kind === "weekly") {
     const who = req.names && req.names.length ? ` (${req.names.join(", ")}, you are in this one)` : "";
-    return `🥠 Weekly fortune for the chat${who}: ${pick(WEEKLY)} Lucky numbers: ${luckyNumbers()}`;
+    return `🥠✨ ${pick(CATEGORIES)}: Weekly fortune for the chat${who}: ${pick(WEEKLY)} Lucky numbers: ${luckyNumbers()}`;
   }
-  return `🥠 ${pick(DECK)}\nLucky numbers: ${luckyNumbers()}`;
+  const disliked = new Set(req.preferences?.disliked ?? []);
+  const preferredCategories = req.preferences?.liked ?? [];
+  const available = preferredCategories.length
+    ? preferredCategories
+    : CATEGORIES.filter((category) => !disliked.has(category));
+  return `🥠✨ ${pick(available.length ? available : CATEGORIES)}: ${pick(DECK)}\nLucky numbers: ${luckyNumbers()}`;
+}
+
+export function formatCustomFortune(text: string): string {
+  return `🥠✨ ${pick(CATEGORIES)}: ${text}\nLucky numbers: ${luckyNumbers()}`;
 }
 
 const SYSTEM = `You are Fortune Cookie, a cute, playful fortune cookie character that lives in a group chat of friends.
-Write ONE short fortune (max 20 words) as a text message. Start with 🥠. End with "Lucky numbers: <three numbers from 1 to 49>". Write it like the slip inside a fortune cookie.
+Write ONE short fortune (max 20 words) as a text message. Start with 🥠✨ and a category label chosen from career, love, bright ideas, friendship, chaotic energy, or small joys. End with "Lucky numbers: <three numbers from 1 to 49>". Write it like the slip inside a fortune cookie.
 Tone: warm, silly, specific, like a friend with a tarot deck. Always happy, warm and positive. Every fortune is good news.
 Hard rules:
 - Entertainment only. Never predict health, money, legal outcomes, or death.
@@ -79,7 +91,11 @@ export function makeFortune(opts: { apiKey?: string; model: string }): Fortune {
       const user =
         req.kind === "weekly"
           ? `Weekly group fortune for the chat. OPTED_IN: ${(req.names ?? []).join(", ") || "none"}.`
-          : `Fortune request. The question (may be empty): """${req.question.slice(0, 300)}"""`;
+          : `Fortune request. The question (may be empty): """${req.question.slice(0, 300)}""". ${
+              req.preferences
+                ? `This user's explicit category preferences: likes ${(req.preferences.liked.join(", ") || "none")}; avoids ${(req.preferences.disliked.join(", ") || "none")}. Use these as gentle style guidance.`
+                : ""
+            }`;
       // Server-side fallback is enabled by default for this model family so a
       // safety refusal reroutes instead of failing. Any failure falls back to the deck.
       const res = await (c.beta.messages as any).create({

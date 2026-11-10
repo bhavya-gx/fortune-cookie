@@ -78,7 +78,7 @@ export class MacMessages {
       if (r.from_me) {
         // The Mac's own Apple ID. Skip what the bot sent; treat the rest as the owner talking.
         if (this.wasSentByBot(text)) continue;
-        out.push({ chat: r.chat, handle: "me", text, isGroup: r.chat.includes(";+;") });
+        out.push({ chat: r.chat, handle: "me", text, fromMe: true, isGroup: r.chat.includes(";+;") });
       } else {
         out.push({ chat: r.chat, handle: r.handle ?? "unknown", text, isGroup: r.chat.includes(";+;") });
       }

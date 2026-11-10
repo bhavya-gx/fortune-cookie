@@ -25,7 +25,8 @@ try {
 }
 
 console.log("🥠 Fortune Cookie is listening to Messages on this Mac.");
-console.log(`Daily cap per person: ${cfg.dailyCap === 0 ? "unlimited" : cfg.dailyCap}`);
+console.log(`Daily cap: ${cfg.dailyCap === 0 ? "unlimited" : `${cfg.dailyCap}/day for standard accounts`}; first 5 users get 6/day, two numbers are unlimited.`);
+console.log("Unlimited accounts: 555 010 0001, 555 010 0002. Learning profile: 555 010 0001.");
 console.log(`Account: ${cfg.dedicated ? "dedicated bot Apple ID (greets groups, answers any private text)" : "personal (only answers messages starting with \"fortune\" or 🥠)"}`);
 console.log(`Engine: ${cfg.apiKey ? `Claude (${cfg.model})` : "built-in deck"}`);
 const groups = mac.groups(8);
@@ -38,9 +39,11 @@ setInterval(async () => {
   busy = true;
   try {
     for (const msg of mac.poll()) {
+      if (msg.fromMe) continue;
       const reply = await bot.handle(msg);
       if (!reply) continue;
       console.log(`[${new Date().toLocaleTimeString()}] ${msg.handle}: ${msg.text}\n  -> ${reply}`);
+      await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000));
       await mac.send(msg.chat, reply);
     }
     // Sunday group fortune

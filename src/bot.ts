@@ -1,7 +1,7 @@
 // The brain. Pure logic: give it an incoming message, get back the reply (or null).
 // No network in here, so it is easy to test.
 import { checkQuestion, cleanStyle, DISCLAIMER, refusalMessage } from "./guardrails.ts";
-import type { Fortune } from "./fortune.ts";
+import { formatCustomFortune, type Fortune } from "./fortune.ts";
 import type { Store } from "./store.ts";
 
 export interface Incoming {
@@ -16,6 +16,7 @@ export interface BotDeps {
   store: Store;
   fortune: Fortune;
   dailyCap: number; // 0 = unlimited
+  cooldownMs?: () => number;
   now?: () => Date;
   timezone?: string;
   // true only when the bot has its OWN Apple ID. Then it greets new groups and
@@ -30,28 +31,53 @@ export function localDate(d: Date, tz: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
 
-// The bot only speaks when asked: the message must START with "fortune" or contain 🥠.
-// This stops it from firing on ordinary chatter that happens to mention the word.
-const TRIGGER = /^\s*(@?fortune(\s*(teller|cookie))?\b|🥠|🔮)/i;
+// Match the keyword, its common typo, a bot mention, or a cookie emoji anywhere.
+const TRIGGER = /@?(?:fortune|fotune|fortun|forturne)(?:\s+(?:teller|cookie))?|🥠|🔮/i;
+const NATURAL_TRIGGER = /\b(?:tell me (?:my )?fortune|what(?:'s| is) my fortune|give me (?:a )?fortune)\b/i;
 
 export function parseTrigger(text: string): { command: string; rest: string } | null {
-  if (!TRIGGER.test(text)) return null;
-  const rest = text.replace(TRIGGER, "").replace(/^[\s:,\-!?]+/, "").trim();
+  const natural = NATURAL_TRIGGER.exec(text);
+  const trigger = natural ?? TRIGGER.exec(text);
+  if (!trigger) return null;
+  const rest = `${text.slice(0, trigger.index)} ${text.slice(trigger.index + trigger[0].length)}`
+    .replace(/^[\s:,\-!?]+/, "")
+    .trim();
   const [first = "", ...tail] = rest.split(/\s+/);
   const word = first.toLowerCase();
-  if (["stop", "join", "log", "help", "resume"].includes(word)) return { command: word, rest: tail.join(" ") };
+  if (["stop", "join", "log", "help", "resume", "like", "dislike", "forget"].includes(word)) return { command: word, rest: tail.join(" ") };
   return { command: "ask", rest };
 }
 
-export const WELCOME_GROUP = '🥠 Hi! I\'m Fortune Cookie. Text "fortune" for yours. 3 a day, just for fun.';
+export const WELCOME_GROUP = '🥠✨ Hi! I\'m Fortune Cookie. Ask for a fortune anytime. Daily limits apply.';
 
 export const WELCOME_DM = "🥠 Hi! I'm Fortune Cookie. Ask me anything, or add me to your group.";
+
+const FIRST_USER_COUNT = 5;
+const FIRST_USER_DAILY_CAP = 6;
+const UNLIMITED_PHONES = new Set(["555 010 0001", "555 010 0002"]);
+const PERSONAL_LEARNING_PHONE = "555 010 0001";
+const CUSTOM_FORTUNES = [
+  "It's all in your head.",
+  "What if it doesn't come true? But, ah, what if it does?",
+  "You write your own fortune.",
+  "No risk, no story.",
+  "It's your vision for a reason.",
+  "You're worthier than you think.",
+  "All it takes is that one small step.",
+];
+
+function normalizedPhone(handle: string): string {
+  const digits = handle.replace(/\D/g, "");
+  return digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+}
 
 export function createBot(deps: BotDeps) {
   const { store, fortune, dailyCap } = deps;
   const now = deps.now ?? (() => new Date());
   const tz = deps.timezone ?? "America/Los_Angeles";
   const dedicated = deps.dedicated ?? false;
+  const cooldownMs = deps.cooldownMs ?? (() => 5000 + Math.random() * 5000);
+  const cooldownUntil = new Map<string, number>();
 
   async function handle(msg: Incoming): Promise<string | null> {
     if (msg.fromMe) return null;
@@ -86,14 +112,33 @@ export function createBot(deps: BotDeps) {
       store.optIn(msg.handle, name);
       return `🥠 You're in, ${name}! You'll be in Sunday's group fortune.`;
     }
+    if (["like", "dislike", "forget"].includes(command)) {
+      if (normalizedPhone(msg.handle) !== PERSONAL_LEARNING_PHONE) {
+        return "🥠✨ Personal learning is enabled only for its designated account.";
+      }
+      if (command === "forget") {
+        store.forgetCategoryPreferences(msg.handle);
+        return "🥠✨ Your learned preferences are cleared.";
+      }
+      const previous = store.latestFortune(msg.handle, msg.chat);
+      const category = previous?.text.match(/^🥠✨\s*([^:]+):/u)?.[1]?.trim();
+      if (!category) return '🥠✨ Get a fortune here first, then text "fortune like" or "fortune dislike".';
+      store.rateCategory(msg.handle, category, command === "like");
+      return command === "like"
+        ? `🥠✨ Got it. I'll lean toward ${category} fortunes.`
+        : `🥠✨ Got it. I'll steer away from ${category} fortunes.`;
+    }
     if (command === "help") {
       return [
         "🥠 Text me:",
-        `fortune (a random one) or fortune <your question>`,
+        `fortune, fotune, @Fortune, 🥠, or "tell me my fortune"`,
+        `Add a question to get a fortune about it`,
         `fortune join <name> (let the weekly fortune mention you)`,
         `fortune log (what I said recently)`,
         `fortune stop (I go quiet for you)`,
-        dailyCap > 0 ? `Up to ${dailyCap} fortunes each per day. ${DISCLAIMER}` : DISCLAIMER,
+        `On the learning account: fortune like, fortune dislike, or fortune forget`,
+        `The first ${FIRST_USER_COUNT} users get up to ${FIRST_USER_DAILY_CAP} fortunes per day; two designated numbers are unlimited.`,
+        dailyCap > 0 ? `Everyone else gets up to ${dailyCap} fortunes per day. ${DISCLAIMER}` : `Everyone else gets unlimited fortunes. ${DISCLAIMER}`,
       ].join("\n");
     }
     if (command === "log") {
@@ -110,10 +155,25 @@ export function createBot(deps: BotDeps) {
     if (refusal) return refusalMessage(refusal); // refusals never count toward the cap
 
     const today = localDate(now(), tz);
-    if (dailyCap > 0 && store.used(msg.handle, today) >= dailyCap) {
-      return `🥠 That's ${dailyCap} for today. More cookies at midnight.`;
+    const timestamp = now().getTime();
+    const readyAt = cooldownUntil.get(msg.handle) ?? 0;
+    if (timestamp < readyAt) {
+      const seconds = Math.ceil((readyAt - timestamp) / 1000);
+      return `🥠✨ The cookie is still baking. Give it ${seconds} seconds, then try again.`;
     }
-    const text = cleanStyle(await fortune({ kind: "fortune", question: rest }));
+    const unlimited = UNLIMITED_PHONES.has(normalizedPhone(msg.handle));
+    const cap = unlimited || dailyCap === 0 ? 0 : store.isFirstUser(msg.handle, FIRST_USER_COUNT) ? FIRST_USER_DAILY_CAP : dailyCap;
+    if (cap > 0 && store.used(msg.handle, today) >= cap) {
+      return `🥠✨ That's ${cap} for today. The cookie is taking a nap until midnight!`;
+    }
+    cooldownUntil.set(msg.handle, timestamp + cooldownMs());
+    const customFortune = store.takeCustomFortune(CUSTOM_FORTUNES);
+    const preferences = normalizedPhone(msg.handle) === PERSONAL_LEARNING_PHONE
+      ? store.categoryPreferences(msg.handle)
+      : undefined;
+    const text = customFortune
+      ? formatCustomFortune(customFortune)
+      : cleanStyle(await fortune({ kind: "fortune", question: rest, preferences }));
     store.bump(msg.handle, today);
     store.log({ at: now().toISOString(), chat: msg.chat, who: msg.handle, kind: "fortune", question: rest, text });
     return text;

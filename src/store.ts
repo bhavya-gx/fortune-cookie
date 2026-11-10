@@ -15,6 +15,11 @@ export interface PredictionLog {
 interface State {
   // handle -> { date (local YYYY-MM-DD), count }
   usage: Record<string, { date: string; count: number }>;
+  // Handles that claimed one of the first-user daily-cap slots.
+  firstUsers: string[];
+  customFortuneIndex: number;
+  // handle -> fortune category -> last explicit rating
+  categoryFeedback: Record<string, Record<string, boolean>>;
   // handle -> first name, only people who texted "fortune join"
   optedIn: Record<string, string>;
   // handles who texted "fortune stop"
@@ -25,7 +30,7 @@ interface State {
   lastWeekly: Record<string, string>;
 }
 
-const EMPTY: State = { usage: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {} };
+const EMPTY: State = { usage: {}, firstUsers: [], customFortuneIndex: 0, categoryFeedback: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {} };
 
 export class Store {
   private state: State;
@@ -40,6 +45,17 @@ export class Store {
       fs.mkdirSync(dir, { recursive: true });
       if (fs.existsSync(this.statePath)) {
         this.state = { ...structuredClone(EMPTY), ...JSON.parse(fs.readFileSync(this.statePath, "utf8")) };
+      }
+      if (fs.existsSync(this.logPath)) {
+        for (const line of fs.readFileSync(this.logPath, "utf8").split(/\r?\n/)) {
+          if (!line) continue;
+          try {
+            const entry = JSON.parse(line) as PredictionLog;
+            if (typeof entry.chat === "string" && typeof entry.text === "string") this.memoryLog.push(entry);
+          } catch {
+            continue;
+          }
+        }
       }
     }
   }
@@ -56,6 +72,44 @@ export class Store {
 
   bump(handle: string, today: string) {
     this.state.usage[handle] = { date: today, count: this.used(handle, today) + 1 };
+    this.save();
+  }
+
+  isFirstUser(handle: string, limit: number): boolean {
+    if (this.state.firstUsers.includes(handle)) return true;
+    if (this.state.firstUsers.length >= limit) return false;
+    this.state.firstUsers.push(handle);
+    this.save();
+    return true;
+  }
+
+  takeCustomFortune(fortunes: readonly string[]): string | null {
+    const fortune = fortunes[this.state.customFortuneIndex];
+    if (fortune === undefined) return null;
+    this.state.customFortuneIndex++;
+    this.save();
+    return fortune;
+  }
+
+  latestFortune(handle: string, chat: string): PredictionLog | null {
+    return [...this.memoryLog].reverse().find((entry) => entry.kind === "fortune" && entry.who === handle && entry.chat === chat) ?? null;
+  }
+
+  rateCategory(handle: string, category: string, liked: boolean) {
+    (this.state.categoryFeedback[handle] ??= {})[category] = liked;
+    this.save();
+  }
+
+  categoryPreferences(handle: string): { liked: string[]; disliked: string[] } {
+    const feedback = this.state.categoryFeedback[handle] ?? {};
+    return {
+      liked: Object.keys(feedback).filter((category) => feedback[category]),
+      disliked: Object.keys(feedback).filter((category) => !feedback[category]),
+    };
+  }
+
+  forgetCategoryPreferences(handle: string) {
+    delete this.state.categoryFeedback[handle];
     this.save();
   }
 

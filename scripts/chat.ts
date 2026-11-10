@@ -13,6 +13,9 @@ const bot = createBot({
   fortune: makeFortune({ apiKey: cfg.apiKey, model: cfg.model }),
   dailyCap: cfg.dailyCap,
   timezone: cfg.timezone,
+  dedicated: cfg.dedicated,
+  unlimitedPhones: cfg.unlimitedPhones,
+  learningPhone: cfg.learningPhone,
 });
 let who = "you";
 console.log("🥠 Fortune Cookie demo. Try: fortune | fortune will I get the job? | fortune help | /as maya | /weekly | /quit");

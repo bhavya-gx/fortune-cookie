@@ -12,6 +12,8 @@ export interface Config {
   apiKey: string | undefined;
   dataDir: string;
   dedicated: boolean; // bot has its own Apple ID
+  unlimitedPhones: string[]; // UNLIMITED_PHONES, comma separated, skip the daily cap
+  learningPhone: string | undefined; // LEARNING_PHONE, the one number whose ratings are learned
 }
 
 function int(name: string, fallback: number): number {
@@ -23,7 +25,7 @@ function int(name: string, fallback: number): number {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const cap = env.DAILY_CAP === undefined || env.DAILY_CAP === "" ? 3 : Number.parseInt(env.DAILY_CAP, 10);
+  const cap = env.DAILY_CAP === undefined || env.DAILY_CAP === "" ? 5 : Number.parseInt(env.DAILY_CAP, 10);
   if (!Number.isFinite(cap) || cap < 0) throw new Error("DAILY_CAP must be a non-negative integer (0 = unlimited)");
   return {
     bbUrl: (env.BB_URL ?? "http://localhost:1234").replace(/\/$/, ""),
@@ -37,5 +39,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     apiKey: env.ANTHROPIC_API_KEY,
     dataDir: env.DATA_DIR ?? "./data",
     dedicated: env.BOT_ACCOUNT === "dedicated",
+    unlimitedPhones: (env.UNLIMITED_PHONES ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+    learningPhone: env.LEARNING_PHONE?.trim() || undefined,
   };
 }

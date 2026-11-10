@@ -1,6 +1,6 @@
 # Fortune Cookie 🥠
 
-Your group chat's fortune cookie. An open-source iMessage bot: add it to a group chat, text `fortune`, and it cracks open a happy fortune with lucky numbers. 3 a day each, just for fun.
+Your group chat's fortune cookie. An open-source iMessage bot: add it to a group chat, text `fortune`, and it cracks open a happy fortune with lucky numbers. 5 a day each, just for fun.
 
 **Try it on any phone:** https://bhavya-gx.github.io/fortune-cookie/
 
@@ -58,7 +58,7 @@ Apple controls how this identity appears on each recipient's device. Recipients 
 
 ## Daily cap and guardrails
 
-- The first five people to request a fortune get up to 6 per day. Other users follow `DAILY_CAP` (default 3); `0` means unlimited for everyone. Two designated phone numbers are always unlimited.
+- Everyone gets `DAILY_CAP` fortunes per day (default 5); `0` means unlimited. Numbers listed in `UNLIMITED_PHONES` in `.env` skip the cap, and `LEARNING_PHONE` is the one number whose `fortune like` and `fortune dislike` ratings are remembered. Both stay private in `.env`.
 - Each user has a randomized 5–10 second cooldown between generated fortunes.
 - Seven custom fortunes are served once each, in order, before the configured AI (or built-in deck) takes over. The shared deck position persists in `data/state.json`.
 - The designated learning account can reply `fortune like` or `fortune dislike` after a fortune to tune future category choices; `fortune forget` clears that profile. This records explicit category feedback, not conversation text.

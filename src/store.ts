@@ -15,8 +15,6 @@ export interface PredictionLog {
 interface State {
   // handle -> { date (local YYYY-MM-DD), count }
   usage: Record<string, { date: string; count: number }>;
-  // Handles that claimed one of the first-user daily-cap slots.
-  firstUsers: string[];
   customFortuneIndex: number;
   // handle -> fortune category -> last explicit rating
   categoryFeedback: Record<string, Record<string, boolean>>;
@@ -30,7 +28,7 @@ interface State {
   lastWeekly: Record<string, string>;
 }
 
-const EMPTY: State = { usage: {}, firstUsers: [], customFortuneIndex: 0, categoryFeedback: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {} };
+const EMPTY: State = { usage: {}, customFortuneIndex: 0, categoryFeedback: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {} };
 
 export class Store {
   private state: State;
@@ -73,14 +71,6 @@ export class Store {
   bump(handle: string, today: string) {
     this.state.usage[handle] = { date: today, count: this.used(handle, today) + 1 };
     this.save();
-  }
-
-  isFirstUser(handle: string, limit: number): boolean {
-    if (this.state.firstUsers.includes(handle)) return true;
-    if (this.state.firstUsers.length >= limit) return false;
-    this.state.firstUsers.push(handle);
-    this.save();
-    return true;
   }
 
   takeCustomFortune(fortunes: readonly string[]): string | null {

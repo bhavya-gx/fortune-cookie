@@ -15,6 +15,8 @@ const bot = createBot({
   dailyCap: cfg.dailyCap,
   timezone: cfg.timezone,
   dedicated: cfg.dedicated,
+  unlimitedPhones: cfg.unlimitedPhones,
+  learningPhone: cfg.learningPhone,
 });
 
 const server = http.createServer((req, res) => {
@@ -57,8 +59,7 @@ setInterval(async () => {
 
 server.listen(cfg.port, async () => {
   console.log(`Fortune Cookie listening on :${cfg.port}`);
-  console.log(`Daily cap: ${cfg.dailyCap === 0 ? "unlimited" : `${cfg.dailyCap}/day for standard accounts`}; first 5 users get 6/day, two numbers are unlimited.`);
-  console.log("Unlimited accounts: 555 010 0001, 555 010 0002. Learning profile: 555 010 0001.");
+  console.log(`Daily cap: ${cfg.dailyCap === 0 ? "unlimited" : `${cfg.dailyCap} per person per day`}. Unlimited numbers from .env: ${cfg.unlimitedPhones.length}. Learning number: ${cfg.learningPhone ? "set" : "none"}.`);
   console.log(`Engine: ${cfg.apiKey ? `Claude (${cfg.model})` : "built-in deck (set ANTHROPIC_API_KEY for AI fortunes)"}`);
   console.log(`BlueBubbles at ${cfg.bbUrl}: ${(await bb.ping()) ? "reachable" : "NOT reachable (check BB_URL and BB_PASSWORD)"}`);
 });

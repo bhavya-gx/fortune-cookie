@@ -17,6 +17,10 @@ export interface BotDeps {
   fortune: Fortune;
   dailyCap: number; // 0 = unlimited
   cooldownMs?: () => number;
+  // Phone numbers (digits, any format) that skip the daily cap, and the one number whose
+  // "fortune like / dislike" ratings are learned. Both come from .env, never from code.
+  unlimitedPhones?: string[];
+  learningPhone?: string;
   now?: () => Date;
   timezone?: string;
   // true only when the bot has its OWN Apple ID. Then it greets new groups and
@@ -52,10 +56,6 @@ export const WELCOME_GROUP = '🥠✨ Hi! I\'m Fortune Cookie. Ask for a fortune
 
 export const WELCOME_DM = "🥠 Hi! I'm Fortune Cookie. Ask me anything, or add me to your group.";
 
-const FIRST_USER_COUNT = 5;
-const FIRST_USER_DAILY_CAP = 6;
-const UNLIMITED_PHONES = new Set(["555 010 0001", "555 010 0002"]);
-const PERSONAL_LEARNING_PHONE = "555 010 0001";
 const CUSTOM_FORTUNES = [
   "It's all in your head.",
   "What if it doesn't come true? But, ah, what if it does?",
@@ -78,6 +78,8 @@ export function createBot(deps: BotDeps) {
   const dedicated = deps.dedicated ?? false;
   const cooldownMs = deps.cooldownMs ?? (() => 5000 + Math.random() * 5000);
   const cooldownUntil = new Map<string, number>();
+  const unlimitedPhones = new Set((deps.unlimitedPhones ?? []).map(normalizedPhone).filter(Boolean));
+  const learningPhone = deps.learningPhone ? normalizedPhone(deps.learningPhone) : "";
 
   async function handle(msg: Incoming): Promise<string | null> {
     if (msg.fromMe) return null;
@@ -113,7 +115,7 @@ export function createBot(deps: BotDeps) {
       return `🥠 You're in, ${name}! You'll be in Sunday's group fortune.`;
     }
     if (["like", "dislike", "forget"].includes(command)) {
-      if (normalizedPhone(msg.handle) !== PERSONAL_LEARNING_PHONE) {
+      if (!learningPhone || normalizedPhone(msg.handle) !== learningPhone) {
         return "🥠✨ Personal learning is enabled only for its designated account.";
       }
       if (command === "forget") {
@@ -136,9 +138,8 @@ export function createBot(deps: BotDeps) {
         `fortune join <name> (let the weekly fortune mention you)`,
         `fortune log (what I said recently)`,
         `fortune stop (I go quiet for you)`,
-        `On the learning account: fortune like, fortune dislike, or fortune forget`,
-        `The first ${FIRST_USER_COUNT} users get up to ${FIRST_USER_DAILY_CAP} fortunes per day; two designated numbers are unlimited.`,
-        dailyCap > 0 ? `Everyone else gets up to ${dailyCap} fortunes per day. ${DISCLAIMER}` : `Everyone else gets unlimited fortunes. ${DISCLAIMER}`,
+        ...(learningPhone ? [`On the learning account: fortune like, fortune dislike, or fortune forget`] : []),
+        dailyCap > 0 ? `Everyone gets up to ${dailyCap} fortunes per day. ${DISCLAIMER}` : `Unlimited fortunes. ${DISCLAIMER}`,
       ].join("\n");
     }
     if (command === "log") {
@@ -161,14 +162,13 @@ export function createBot(deps: BotDeps) {
       const seconds = Math.ceil((readyAt - timestamp) / 1000);
       return `🥠✨ The cookie is still baking. Give it ${seconds} seconds, then try again.`;
     }
-    const unlimited = UNLIMITED_PHONES.has(normalizedPhone(msg.handle));
-    const cap = unlimited || dailyCap === 0 ? 0 : store.isFirstUser(msg.handle, FIRST_USER_COUNT) ? FIRST_USER_DAILY_CAP : dailyCap;
+    const cap = unlimitedPhones.has(normalizedPhone(msg.handle)) ? 0 : dailyCap;
     if (cap > 0 && store.used(msg.handle, today) >= cap) {
       return `🥠✨ That's ${cap} for today. The cookie is taking a nap until midnight!`;
     }
     cooldownUntil.set(msg.handle, timestamp + cooldownMs());
     const customFortune = store.takeCustomFortune(CUSTOM_FORTUNES);
-    const preferences = normalizedPhone(msg.handle) === PERSONAL_LEARNING_PHONE
+    const preferences = learningPhone && normalizedPhone(msg.handle) === learningPhone
       ? store.categoryPreferences(msg.handle)
       : undefined;
     const text = customFortune

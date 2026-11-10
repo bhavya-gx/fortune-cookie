@@ -102,9 +102,9 @@ test("custom fortune position survives a store restart", () => {
   }
 });
 
-test("the 415 number learns from explicit ratings and can clear its profile", async () => {
+test("the learning number learns from explicit ratings and can clear its profile", async () => {
   const store = new Store(null);
-  const handle = "555 010 0001";
+  const handle = "+1 555 010 0001";
   store.log({ at: "2026-11-04T18:00:00.000Z", chat, who: handle, kind: "fortune", question: "", text: "🥠✨ love: A kind surprise is coming. Lucky numbers: 2, 8, 19" });
   const exhaustedDeck = Array.from({ length: 7 }, (_, index) => `used ${index}`);
   for (let i = 0; i < exhaustedDeck.length; i++) store.takeCustomFortune(exhaustedDeck);
@@ -117,6 +117,8 @@ test("the 415 number learns from explicit ratings and can clear its profile", as
     },
     dailyCap: 3,
     cooldownMs: () => 0,
+    learningPhone: "+1 555 010 0001",
+    unlimitedPhones: ["+1 555 010 0001", "+1 555 010 0002"],
   });
 
   assert.match((await b.handle(msg("fortune like", handle)))!, /lean toward love/);
@@ -130,16 +132,15 @@ test("the 415 number learns from explicit ratings and can clear its profile", as
   assert.match((await b.handle(msg("fortune forget", handle)))!, /cleared/);
   await b.handle(msg("fortune", handle));
   assert.deepEqual(requests.at(-1)?.preferences, { liked: [], disliked: [] });
-  assert.match((await b.handle(msg("fortune like", "555 010 0002")))!, /only for its designated account/);
+  assert.match((await b.handle(msg("fortune like", "+1 555 010-0002")))!, /only for its designated account/);
 });
 
-test("first-user cap of 6, refusals do not count, resets next day", async () => {
+test("cap of 5 for everyone, refusals do not count, resets next day", async () => {
   let day = new Date("2026-11-04T18:00:00Z"); // 10am Pacific
-  const { bot: b } = bot({ cap: 3, now: () => day });
-  for (let i = 0; i < 6; i++) assert.match((await b.handle(msg("fortune")))!, /Lucky numbers/);
-  const capped = await b.handle(msg("fortune"));
-  assert.match(capped!, /6 for today/);
-  // a different person still has their own early-user allowance
+  const { bot: b } = bot({ cap: 5, now: () => day });
+  for (let i = 0; i < 5; i++) assert.match((await b.handle(msg("fortune")))!, /Lucky numbers/);
+  assert.match((await b.handle(msg("fortune")))!, /5 for today/);
+  // a different person still has their own 5
   assert.match((await b.handle(msg("fortune", "+15550002")))!, /Lucky numbers/);
   // a refused question never costs a fortune
   assert.match((await b.handle(msg("fortune will I win the lottery", "+15550002")))!, /money/i);
@@ -154,25 +155,23 @@ test("cap of 0 means unlimited", async () => {
   for (let i = 0; i < 10; i++) assert.match((await b.handle(msg("fortune")))!, /Lucky numbers/);
 });
 
-test("first five users get six fortunes, and the designated phone is unlimited", async () => {
-  const { bot: b } = bot({ cap: 3 });
-  const unlimited = "555 010 0001";
-  for (let i = 0; i < 10; i++) assert.match((await b.handle(msg("fortune", unlimited)))!, /Lucky numbers/);
-  const secondUnlimited = "555 010 0002";
-  for (let i = 0; i < 10; i++) assert.match((await b.handle(msg("fortune", secondUnlimited)))!, /Lucky numbers/);
-
-  for (let user = 1; user <= 5; user++) {
-    const handle = `+1555100000${user}`;
-    for (let i = 0; i < 6; i++) assert.match((await b.handle(msg("fortune", handle)))!, /Lucky numbers/);
-    assert.match((await b.handle(msg("fortune", handle)))!, /6 for today/);
-  }
-
-  for (let i = 0; i < 3; i++) assert.match((await b.handle(msg("fortune", "+15559999999")))!, /Lucky numbers/);
-  assert.match((await b.handle(msg("fortune", "+15559999999")))!, /3 for today/);
+test("numbers listed in UNLIMITED_PHONES skip the cap, everyone else gets the cap", async () => {
+  const store = new Store(null);
+  store.seen(chat, "+15550000");
+  const b = createBot({ store, fortune, dailyCap: 5, cooldownMs: () => 0, unlimitedPhones: ["(555) 010-0001", "+1 555 010 0002"] });
+  for (let i = 0; i < 10; i++) assert.match((await b.handle(msg("fortune", "+1 (555) 010-0001")))!, /Lucky numbers/);
+  for (let i = 0; i < 10; i++) assert.match((await b.handle(msg("fortune", "+15550100002")))!, /Lucky numbers/);
+  for (let i = 0; i < 5; i++) assert.match((await b.handle(msg("fortune", "+15559999999")))!, /Lucky numbers/);
+  assert.match((await b.handle(msg("fortune", "+15559999999")))!, /5 for today/);
 });
 
-test("DAILY_CAP env is read, defaults to 3, rejects junk", () => {
-  assert.equal(loadConfig({}).dailyCap, 3);
+test("with no learning number set, ratings are refused for everyone", async () => {
+  const { bot: b } = bot({ cap: 5 });
+  assert.match((await b.handle(msg("fortune like")))!, /only for its designated account/);
+});
+
+test("DAILY_CAP env is read, defaults to 5, rejects junk", () => {
+  assert.equal(loadConfig({}).dailyCap, 5);
   assert.equal(loadConfig({ DAILY_CAP: "5" }).dailyCap, 5);
   assert.equal(loadConfig({ DAILY_CAP: "0" }).dailyCap, 0);
   assert.throws(() => loadConfig({ DAILY_CAP: "lots" }));
@@ -227,7 +226,7 @@ test("house style: no em dashes or double hyphens anywhere", () => {
 
 test("log and help answer, and the log records what was said", async () => {
   const { bot: b, store } = bot();
-  assert.match((await b.handle(msg("fortune help")))!, /Everyone else gets up to 3 fortunes/);
+  assert.match((await b.handle(msg("fortune help")))!, /Everyone gets up to 3 fortunes/);
   assert.match((await b.handle(msg("fortune log")))!, /Nothing yet/);
   await b.handle(msg("fortune"));
   assert.equal(store.recent(chat).length, 1);
@@ -264,13 +263,13 @@ test("says hi once when it joins a new group", async () => {
 
 test("private chat: intro first, then any text is a question, cap still applies", async () => {
   const store = new Store(null);
-  const b = createBot({ store, fortune, dailyCap: 3, dedicated: true, cooldownMs: () => 0 });
+  const b = createBot({ store, fortune, dailyCap: 5, dedicated: true, cooldownMs: () => 0 });
   const dm = (text: string) => ({ chat: "iMessage;-;+1555", handle: "+1555", text, isGroup: false });
   const first = (await b.handle(dm("will saturday be fun")))!;
   assert.match(first, /Ask me anything/);
   assert.match(first, /Lucky numbers/);
-  for (let i = 0; i < 5; i++) assert.match((await b.handle(dm("and sunday?")))!, /Lucky numbers/);
-  assert.match((await b.handle(dm("fortune")))!, /6 for today/);
+  for (let i = 0; i < 4; i++) assert.match((await b.handle(dm("and sunday?")))!, /Lucky numbers/);
+  assert.match((await b.handle(dm("fortune")))!, /5 for today/);
   assert.match((await b.handle(dm("should I buy bitcoin")))!, /money/);
 });
 

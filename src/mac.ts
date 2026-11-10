@@ -14,6 +14,8 @@ const bot = createBot({
   dailyCap: cfg.dailyCap,
   timezone: cfg.timezone,
   dedicated: cfg.dedicated,
+  unlimitedPhones: cfg.unlimitedPhones,
+  learningPhone: cfg.learningPhone,
 });
 
 let mac: MacMessages;
@@ -25,8 +27,7 @@ try {
 }
 
 console.log("🥠 Fortune Cookie is listening to Messages on this Mac.");
-console.log(`Daily cap: ${cfg.dailyCap === 0 ? "unlimited" : `${cfg.dailyCap}/day for standard accounts`}; first 5 users get 6/day, two numbers are unlimited.`);
-console.log("Unlimited accounts: 555 010 0001, 555 010 0002. Learning profile: 555 010 0001.");
+console.log(`Daily cap: ${cfg.dailyCap === 0 ? "unlimited" : `${cfg.dailyCap} per person per day`}. Unlimited numbers from .env: ${cfg.unlimitedPhones.length}. Learning number: ${cfg.learningPhone ? "set" : "none"}.`);
 console.log(`Account: ${cfg.dedicated ? "dedicated bot Apple ID (greets groups, answers any private text)" : "personal (only answers messages starting with \"fortune\" or 🥠)"}`);
 console.log(`Engine: ${cfg.apiKey ? `Claude (${cfg.model})` : "built-in deck"}`);
 const groups = mac.groups(8);

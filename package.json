@@ -1,0 +1,19 @@
+{
+  "name": "fortune-cookie",
+  "version": "0.1.0",
+  "description": "Your group chat's fortune cookie. Open source iMessage bot that runs on your Mac.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "mac": "node --env-file-if-exists=.env src/mac.ts",
+    "chat": "node scripts/chat.ts",
+    "start": "node --env-file-if-exists=.env src/server.ts",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest"
+  }
+}

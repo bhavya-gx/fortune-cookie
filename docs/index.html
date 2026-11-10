@@ -1,0 +1,151 @@
+
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fortune Cookie 🥠</title>
+<meta name="description" content="Your group chat's fortune cookie. An open-source iMessage bot.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fortune Cookie">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--ground:#fff;--ink:#2A1A06;--grape:#D98A1E;--lilac:#F6C978;--mist:#FFF6E8;--bubble:#FF8FC7;--butter:#FFD84D;--mint:#7FE0C2;--sky:#9FD3FF;font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:var(--ground)}
+body{margin:0;padding:0 clamp(16px,4vw,48px);background:var(--ground)}
+.wrap{max-width:1180px;margin:0 auto}
+nav{display:flex;justify-content:space-between;align-items:center;padding-block:20px;font-weight:600}
+nav a{color:var(--ink);text-decoration:none;margin-left:20px}
+h1{font-size:clamp(44px,8vw,104px);line-height:.95;letter-spacing:-.03em;margin:0;font-weight:800}
+h2{font-size:clamp(32px,4.5vw,56px);letter-spacing:-.02em;line-height:1;margin:0 0 24px;font-weight:800}
+p{font-size:18px;line-height:1.55;max-width:60ch}
+section{padding-block:clamp(72px,10vw,160px)}
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center;padding-block:40px 100px}
+.hero img{width:100%;max-width:440px;justify-self:center;animation:bob 4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-12px) rotate(-2deg)}}
+.btn{display:inline-block;background:var(--grape);color:#fff;border:0;border-radius:999px;padding:16px 28px;font:600 18px Poppins,sans-serif;cursor:pointer;transition:transform .15s}
+.btn:hover{transform:translateY(-2px) scale(1.03)}.btn:active{transform:scale(.97)}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.sw{border-radius:24px;padding:20px;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;font-weight:600}
+.sw small{font-weight:400;font-size:15px}
+.type{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end}
+.big{font-size:clamp(80px,14vw,200px);font-weight:800;line-height:.9;letter-spacing:-.04em;color:var(--grape)}
+.phone{background:var(--mist);border-radius:40px;padding:28px;display:flex;flex-direction:column;gap:12px;max-width:420px}
+.msg{padding:12px 16px;border-radius:22px;max-width:80%;font-size:16px;line-height:1.4}
+.them{background:#E4E4EA;align-self:flex-start}.me{background:#2F7BFF;color:#fff;align-self:flex-end}
+.bot{background:#0A84FF;align-self:flex-end;color:#fff}
+.who{font-size:13px;margin:4px 0 -8px 8px;opacity:.7}
+.chats{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.try{background:var(--mist);border-radius:40px;padding:clamp(28px,5vw,64px);display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+#out{font-size:clamp(22px,2.4vw,30px);font-weight:600;line-height:1.35;min-height:5em}
+#left{margin-top:12px;font-size:16px}
+ul.rules{font-size:18px;line-height:1.7;padding-left:22px}
+.voice{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+footer{padding-block:80px 40px}
+footer .name{font-size:clamp(48px,11vw,160px);font-weight:800;letter-spacing:-.04em;color:var(--lilac);line-height:.9}
+@media (max-width:760px){.hero,.type,.chats,.try,.voice{grid-template-columns:1fr}.swatches{grid-template-columns:1fr 1fr}nav a:not(:last-child){display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head><body>
+<div class="wrap">
+<nav><strong>Fortune Cookie</strong><div><a href="#colour">Colour</a><a href="#type">Type</a><a href="#chat">In the chat</a><a href="#try">Try it</a></div></nav>
+
+<div class="hero">
+  <div>
+    <h1>Your group chat's fortune cookie</h1>
+    <p>An open-source iMessage bot that cracks open happy fortunes for your group chat. Cute, playful, a little dramatic, and never scary.</p>
+    <a class="btn" href="#try">Crack one open</a> <a class="btn" style="background:#fff;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)" href="https://github.com/bhavya-in-sf/fortune-cookie">Get it on GitHub</a>
+  </div>
+  <img src="logo.svg" alt="Smiling fortune cookie mascot with a paper slip">
+</div>
+
+<section id="colour">
+  <h2>Cookie gold on white</h2>
+  <p>White ground, dark crust ink, honey for highlights. In iMessage the cookie's own messages are blue. Pink, butter and mint are sparkle colours: small doses, never backgrounds.</p>
+  <div class="swatches">
+    <div class="sw" style="background:var(--grape);color:#fff">Toasted<small>#D98A1E · buttons, wordmark</small></div>
+    <div class="sw" style="background:var(--lilac)">Honey<small>#F6C978 · highlights</small></div>
+    <div class="sw" style="background:var(--ink);color:#fff">Crust<small>#2A1A06 · all text</small></div>
+    <div class="sw" style="background:var(--mist)">Cream<small>#FFF6E8 · panels</small></div>
+    <div class="sw" style="background:var(--bubble)">Bubblegum<small>#FF8FC7 · cheeks, hearts</small></div>
+    <div class="sw" style="background:var(--butter)">Butter<small>#FFD84D · stars</small></div>
+    <div class="sw" style="background:var(--mint)">Mint<small>#7FE0C2 · sparkles</small></div>
+    <div class="sw" style="background:#fff;box-shadow:inset 0 0 0 2px var(--mist)">White<small>#FFFFFF · ground</small></div>
+  </div>
+</section>
+
+<section id="type">
+  <h2>One face: Poppins</h2>
+  <div class="type">
+    <div class="big">Aa ✦</div>
+    <div><p><b>ExtraBold 800</b> for headlines, tight and big. <b>SemiBold 600</b> for buttons and fortunes. <b>Regular 400</b> for everything else. Sentence case always.</p></div>
+  </div>
+</section>
+
+<section id="chat">
+  <h2>How it sounds in the chat</h2>
+  <div class="chats">
+    <div class="phone">
+      <div class="msg them">ok who's coming saturday</div>
+      <div class="msg me">fortune will saturday be fun?</div>
+      <div class="who">Fortune Cookie</div>
+      <div class="msg bot">🥠 A plan will fall through and the backup plan will be better.<br>Lucky numbers: 7, 18, 42</div>
+    </div>
+    <div class="phone">
+      <div class="msg them">fortune will I win the lottery</div>
+      <div class="who">Fortune Cookie</div>
+      <div class="msg bot">🥠 No money fortunes. Ask about love, luck or your week.</div>
+      <div class="msg me">fortune</div>
+      <div class="who">Fortune Cookie</div>
+      <div class="msg bot">🥠 That's 3 for today. More cookies at midnight.</div>
+    </div>
+  </div>
+</section>
+
+<section id="try">
+  <div class="try">
+    <div>
+      <h2>Try it: 3 a day</h2>
+      <p>Same deck and same daily cap as the bot. Your count resets at midnight.</p>
+      <button class="btn" id="draw">Draw my fortune</button>
+      <div id="left"></div>
+    </div>
+    <div id="out" aria-live="polite">🥠 Tap the button. Your cookie is waiting.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Voice and rules</h2>
+  <div class="voice">
+    <ul class="rules">
+      <li>Warm, silly, specific. A friend with a tarot deck.</li>
+      <li>Every fortune starts with 🥠 and ends with lucky numbers.</li>
+      <li>20 words or fewer. One fortune, one idea.</li>
+      <li>No em dashes, ever.</li>
+    </ul>
+    <ul class="rules">
+      <li>Entertainment only, said clearly.</li>
+      <li>No health, money, legal or death predictions.</li>
+      <li>Only names people who texted "fortune join".</li>
+      <li>"fortune stop" works for anyone, always.</li>
+    </ul>
+  </div>
+</section>
+
+<footer><div class="name">Fortune Cookie</div><p>Open source, Apache-2.0. For entertainment only.</p></footer>
+</div>
+<script>
+const DECK=["A tiny good surprise is on its way. Say yes to the invite you almost skipped.","Someone is thinking about texting you. Text first and win.","The thing you keep putting off takes ten minutes. The stars checked.","Snacks will be involved in your next big decision. Choose the good snacks.","A plan will fall through and the backup plan will be better. Trust the detour.","Your luck is warming up. Wear the outfit you save for later.","A compliment is coming. Do not argue with it, just say thank you.","You are about to be right about something small and extremely satisfying.","Pack a charger. The universe says it will matter.","You will find something you thought was lost. Check the other coat.","Today is a good day to start the thing badly. Badly counts."];
+const CAP=3,nums=()=>{const n=new Set();while(n.size<3)n.add(1+Math.floor(Math.random()*49));return[...n].join(", ")};
+const pick=a=>a[Math.floor(Math.random()*a.length)],today=new Date().toLocaleDateString("en-CA");
+let used=0;try{const s=JSON.parse(localStorage.getItem("ft")||"{}");used=s.d===today?s.n:0}catch{}
+const left=document.getElementById("left"),out=document.getElementById("out");
+const show=()=>left.textContent=`${Math.max(0,CAP-used)} of ${CAP} left today`;show();
+document.getElementById("draw").onclick=()=>{
+  if(used>=CAP){out.textContent="🥠 That's 3 for today. More cookies at midnight.";return}
+  used++;try{localStorage.setItem("ft",JSON.stringify({d:today,n:used}))}catch{}
+  out.textContent=`🥠 ${pick(DECK)} Lucky numbers: ${nums()}`;show();
+};
+</script>
+
+</body></html>

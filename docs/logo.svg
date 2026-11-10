@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Fortune Cookie mascot">
+  <ellipse cx="100" cy="168" rx="62" ry="9" fill="#F3E7D3"/>
+  <path d="M28 120c0-46 34-82 72-82s72 36 72 82c-20-8-44-10-72 10-28-20-52-18-72-10z" fill="#F2B54A"/>
+  <path d="M100 130c-28-20-52-18-72-10 10 22 38 38 72 38s62-16 72-38c-20-8-44-10-72 10z" fill="#D98A1E"/>
+  <path d="M100 58c-8 22-8 48 0 72" stroke="#C47716" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <rect x="108" y="96" width="62" height="16" rx="3" fill="#fff" transform="rotate(-12 108 96)"/>
+  <circle cx="70" cy="92" r="6" fill="#2A1A06"/><circle cx="130" cy="92" r="6" fill="#2A1A06"/>
+  <circle cx="72" cy="90" r="2" fill="#fff"/><circle cx="132" cy="90" r="2" fill="#fff"/>
+  <path d="M92 104q8 7 16 0" stroke="#2A1A06" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="56" cy="104" r="7" fill="#FF8FA3" opacity=".6"/><circle cx="144" cy="104" r="7" fill="#FF8FA3" opacity=".6"/>
+</svg>

@@ -17,9 +17,15 @@ export const CHAT_DB = path.join(os.homedir(), "Library/Messages/chat.db");
 export function decodeAttributedBody(blob: Uint8Array | null | undefined): string | null {
   if (!blob) return null;
   const buf = Buffer.from(blob);
-  const at = buf.indexOf("NSString");
+  // The class can be NSString or NSMutableString; after it come a few marker
+  // bytes ending in "+" (0x2b), then the length.
+  let at = buf.indexOf("NSString");
+  let name = "NSString";
+  if (at < 0) { at = buf.indexOf("NSMutableString"); name = "NSMutableString"; }
   if (at < 0) return null;
-  let i = at + "NSString".length + 5; // skip class-name terminator and markers
+  const plus = buf.indexOf(0x2b, at + name.length);
+  if (plus < 0 || plus - (at + name.length) > 12) return null;
+  let i = plus + 1;
   let len = buf[i];
   i += 1;
   if (len === 0x81) { len = buf.readUInt16LE(i); i += 2; }

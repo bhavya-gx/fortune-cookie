@@ -2,7 +2,7 @@
 
 Your group chat's fortune cookie. An open-source iMessage bot: add it to a group chat, text `fortune`, and it cracks open a happy fortune with lucky numbers. 3 a day each, just for fun.
 
-**Try it on any phone:** https://bhavya-in-sf.github.io/fortune-cookie/
+**Try it on any phone:** https://bhavya-gx.github.io/fortune-cookie/
 
 ## How it works
 
@@ -17,7 +17,7 @@ Apple has no bot API for iMessage. So Fortune Cookie runs on a Mac that is signe
 ## Try it in 10 seconds (no Mac setup, no key)
 
 ```bash
-git clone https://github.com/bhavya-in-sf/fortune-cookie.git
+git clone https://github.com/bhavya-gx/fortune-cookie.git
 cd fortune-cookie
 npm install
 npm run chat

@@ -72,6 +72,19 @@ Apple controls how this identity appears on each recipient's device. Recipients 
 
 Without a key it uses a built-in deck of happy fortunes. Set `ANTHROPIC_API_KEY` in `.env` to have Claude write them. Any model error falls back to the deck.
 
+## Keep it running
+
+`npm run mac` stops when you close Terminal. To run it in the background instead, starting at login and restarting if it crashes:
+
+1. System Settings > Privacy & Security > Full Disk Access > **+**, press Cmd+Shift+G and add your `node` binary (`readlink -f $(which node)` prints it). Re-add it after upgrading Node.
+2. `npm run service:install`
+
+`npm run service:status`, `service:restart` (after editing `.env`) and `service:uninstall` manage it. Output goes to `data/bot.log`. Keep the Mac plugged in, awake and signed in to Messages.
+
+## Troubleshooting
+
+`npm run doctor` (in a terminal with Full Disk Access) shows the last 8 messages the Mac received and whether the bot would answer each one, or why not. If your texts are missing from that list, they are not reaching this Mac: check Messages > Settings > iMessage and that you are texting an address listed there.
+
 ## Other setups
 
 - **BlueBubbles:** `npm start` runs a webhook server for [BlueBubbles](https://bluebubbles.app). `scripts/verify-bluebubbles.ts` checks the connection.

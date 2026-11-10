@@ -12,6 +12,10 @@
     "chat": "node scripts/chat.ts",
     "doctor": "node scripts/doctor.ts",
     "stats": "node --env-file-if-exists=.env scripts/stats.ts",
+    "service:install": "zsh scripts/service.sh install",
+    "service:uninstall": "zsh scripts/service.sh uninstall",
+    "service:restart": "zsh scripts/service.sh restart",
+    "service:status": "zsh scripts/service.sh status",
     "start": "node --env-file-if-exists=.env src/server.ts",
     "test": "node --test test/"
   },

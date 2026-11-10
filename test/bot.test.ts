@@ -1,7 +1,7 @@
 // Run with: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createBot, parseTrigger, localDate } from "../src/bot.ts";
+import { createBot, parseTrigger, localDate, CUSTOM_FORTUNES } from "../src/bot.ts";
 import { Store } from "../src/store.ts";
 import { checkQuestion, cleanStyle } from "../src/guardrails.ts";
 import { offlineFortune } from "../src/fortune.ts";
@@ -71,17 +71,9 @@ test("custom fortunes exhaust before the AI provider is used", async () => {
     dailyCap: 0,
     cooldownMs: () => 0,
   });
-  const custom = [
-    "It's all in your head.",
-    "What if it doesn't come true? But, ah, what if it does?",
-    "You write your own fortune.",
-    "No risk, no story.",
-    "It's your vision for a reason.",
-    "You're worthier than you think.",
-    "All it takes is that one small step.",
-  ];
+  const custom = CUSTOM_FORTUNES;
   for (const sentence of custom) {
-    assert.match((await b.handle(msg("fortune")))!, new RegExp(sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+    assert.match((await b.handle(msg("fortune")))!, new RegExp(`: ${sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n`));
   }
   assert.equal(aiCalls, 0);
   assert.match((await b.handle(msg("fortune")))!, /AI fortune/);
@@ -165,13 +157,37 @@ test("numbers listed in UNLIMITED_PHONES skip the cap, everyone else gets the ca
   assert.match((await b.handle(msg("fortune", "+15559999999")))!, /5 for today/);
 });
 
+test("each person keeps the cap of the cohort they joined, across restarts", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fortune-cohort-"));
+  try {
+    const early = new Store(dir);
+    const b6 = createBot({ store: early, fortune, dailyCap: 6, cooldownMs: () => 0 });
+    for (let i = 0; i < 6; i++) assert.match((await b6.handle(msg("fortune", "+15550001")))!, /Lucky numbers/);
+    assert.match((await b6.handle(msg("fortune", "+15550001")))!, /6 for today/);
+    // Owner lowers the cap and restarts: the early person keeps 6, a newcomer gets 2.
+    const later = new Store(dir);
+    const b2 = createBot({ store: later, fortune, dailyCap: 2, cooldownMs: () => 0 });
+    assert.match((await b2.handle(msg("fortune", "+15550001")))!, /6 for today/);
+    for (let i = 0; i < 2; i++) assert.match((await b2.handle(msg("fortune", "+15550009")))!, /Lucky numbers/);
+    assert.match((await b2.handle(msg("fortune", "+15550009")))!, /2 for today/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("@Fortune and natural phrasing trigger it", () => {
+  assert.deepEqual(parseTrigger("@Fortune will today be good"), { command: "ask", rest: "will today be good" });
+  assert.deepEqual(parseTrigger("what's my fortune"), { command: "ask", rest: "" });
+  assert.deepEqual(parseTrigger("forturne like"), { command: "like", rest: "" });
+});
+
 test("with no learning number set, ratings are refused for everyone", async () => {
   const { bot: b } = bot({ cap: 5 });
   assert.match((await b.handle(msg("fortune like")))!, /only for its designated account/);
 });
 
-test("DAILY_CAP env is read, defaults to 5, rejects junk", () => {
-  assert.equal(loadConfig({}).dailyCap, 5);
+test("DAILY_CAP env is read, defaults to 6, rejects junk", () => {
+  assert.equal(loadConfig({}).dailyCap, 6);
   assert.equal(loadConfig({ DAILY_CAP: "5" }).dailyCap, 5);
   assert.equal(loadConfig({ DAILY_CAP: "0" }).dailyCap, 0);
   assert.throws(() => loadConfig({ DAILY_CAP: "lots" }));

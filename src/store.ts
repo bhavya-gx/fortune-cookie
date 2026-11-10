@@ -15,6 +15,8 @@ export interface PredictionLog {
 interface State {
   // handle -> { date (local YYYY-MM-DD), count }
   usage: Record<string, { date: string; count: number }>;
+  // handle -> daily cap assigned the first time they asked (their cohort)
+  capCohort: Record<string, number>;
   customFortuneIndex: number;
   // handle -> fortune category -> last explicit rating
   categoryFeedback: Record<string, Record<string, boolean>>;
@@ -28,7 +30,7 @@ interface State {
   lastWeekly: Record<string, string>;
 }
 
-const EMPTY: State = { usage: {}, customFortuneIndex: 0, categoryFeedback: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {} };
+const EMPTY: State = { usage: {}, capCohort: {}, customFortuneIndex: 0, categoryFeedback: {}, optedIn: {}, stopped: [], chats: {}, lastWeekly: {} };
 
 export class Store {
   private state: State;
@@ -71,6 +73,15 @@ export class Store {
   bump(handle: string, today: string) {
     this.state.usage[handle] = { date: today, count: this.used(handle, today) + 1 };
     this.save();
+  }
+
+  // The cap this person joined with. Changing DAILY_CAP later only affects new people.
+  capFor(handle: string, defaultCap: number): number {
+    const cap = this.state.capCohort[handle];
+    if (cap !== undefined) return cap;
+    this.state.capCohort[handle] = defaultCap;
+    this.save();
+    return defaultCap;
   }
 
   takeCustomFortune(fortunes: readonly string[]): string | null {

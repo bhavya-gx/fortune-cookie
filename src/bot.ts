@@ -56,14 +56,14 @@ export const WELCOME_GROUP = '🥠✨ Hi! I\'m Fortune Cookie. Ask for a fortune
 
 export const WELCOME_DM = "🥠 Hi! I'm Fortune Cookie. Ask me anything, or add me to your group.";
 
-const CUSTOM_FORTUNES = [
-  "It's all in your head.",
-  "What if it doesn't come true? But, ah, what if it does?",
-  "You write your own fortune.",
-  "No risk, no story.",
-  "It's your vision for a reason.",
-  "You're worthier than you think.",
-  "All it takes is that one small step.",
+export const CUSTOM_FORTUNES = [
+  "it's all in your head.",
+  "what if it doesn't come true? but, ah, what if it does?",
+  "you write your own fortune",
+  "no risk, no story",
+  "it's your vision for a reason",
+  "you're worthier than you think",
+  "all it takes is that one small step",
 ];
 
 function normalizedPhone(handle: string): string {
@@ -162,7 +162,7 @@ export function createBot(deps: BotDeps) {
       const seconds = Math.ceil((readyAt - timestamp) / 1000);
       return `🥠✨ The cookie is still baking. Give it ${seconds} seconds, then try again.`;
     }
-    const cap = unlimitedPhones.has(normalizedPhone(msg.handle)) ? 0 : dailyCap;
+    const cap = unlimitedPhones.has(normalizedPhone(msg.handle)) ? 0 : store.capFor(msg.handle, dailyCap);
     if (cap > 0 && store.used(msg.handle, today) >= cap) {
       return `🥠✨ That's ${cap} for today. The cookie is taking a nap until midnight!`;
     }

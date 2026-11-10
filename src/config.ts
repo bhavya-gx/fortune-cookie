@@ -14,6 +14,7 @@ export interface Config {
   dedicated: boolean; // bot has its own Apple ID
   unlimitedPhones: string[]; // UNLIMITED_PHONES, comma separated, skip the daily cap
   learningPhone: string | undefined; // LEARNING_PHONE, the one number whose ratings are learned
+  keepAwake: boolean; // KEEP_AWAKE, run caffeinate while the bot runs (default on, KEEP_AWAKE=0 turns it off)
 }
 
 function int(name: string, fallback: number): number {
@@ -25,7 +26,7 @@ function int(name: string, fallback: number): number {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const cap = env.DAILY_CAP === undefined || env.DAILY_CAP === "" ? 5 : Number.parseInt(env.DAILY_CAP, 10);
+  const cap = env.DAILY_CAP === undefined || env.DAILY_CAP === "" ? 6 : Number.parseInt(env.DAILY_CAP, 10);
   if (!Number.isFinite(cap) || cap < 0) throw new Error("DAILY_CAP must be a non-negative integer (0 = unlimited)");
   return {
     bbUrl: (env.BB_URL ?? "http://localhost:1234").replace(/\/$/, ""),
@@ -41,5 +42,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dedicated: env.BOT_ACCOUNT === "dedicated",
     unlimitedPhones: (env.UNLIMITED_PHONES ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     learningPhone: env.LEARNING_PHONE?.trim() || undefined,
+    keepAwake: env.KEEP_AWAKE !== "0",
   };
 }

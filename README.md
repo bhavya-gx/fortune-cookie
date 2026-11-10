@@ -1,6 +1,6 @@
 # Fortune Cookie 🥠
 
-Your group chat's fortune cookie. An open-source iMessage bot: add it to a group chat, text `fortune`, and it cracks open a happy fortune with lucky numbers. 5 a day each, just for fun.
+Your group chat's fortune cookie. An open-source iMessage bot: add it to a group chat, text `fortune`, and it cracks open a happy fortune with lucky numbers. 6 a day each, just for fun.
 
 **Try it on any phone:** https://bhavya-gx.github.io/fortune-cookie/
 
@@ -50,7 +50,7 @@ Type `fortune will saturday be fun?`. Use `/as maya` to switch person and `/quit
    ```bash
    npm install && npm run mac
    ```
-   Approve the prompt that lets Terminal control Messages. Keep the Mac awake with `caffeinate -s &`.
+   Approve the prompt that lets Terminal control Messages. `npm run mac` keeps the Mac awake with `caffeinate` while it runs and lets it sleep again when you stop it (`KEEP_AWAKE=0` turns this off).
 
 `BOT_ACCOUNT=personal` (the default) is for running it on your own Apple ID: it answers messages containing a fortune trigger and never greets groups or replies to ordinary texts.
 
@@ -58,8 +58,8 @@ Apple controls how this identity appears on each recipient's device. Recipients 
 
 ## Daily cap and guardrails
 
-- Everyone gets `DAILY_CAP` fortunes per day (default 5); `0` means unlimited. Numbers listed in `UNLIMITED_PHONES` in `.env` skip the cap, and `LEARNING_PHONE` is the one number whose `fortune like` and `fortune dislike` ratings are remembered. Both stay private in `.env`.
-- Each user has a randomized 5–10 second cooldown between generated fortunes.
+- Everyone gets `DAILY_CAP` fortunes per day (default 6); `0` means unlimited. Each person keeps the cap they started with (saved in `data/state.json`), so changing `DAILY_CAP` later only affects new people. Numbers listed in `UNLIMITED_PHONES` in `.env` skip the cap, and `LEARNING_PHONE` is the one number whose `fortune like` and `fortune dislike` ratings are remembered. Both stay private in `.env`.
+- Each user has a randomized 5–10 second cooldown between generated fortunes, and every reply waits 1–2 seconds before sending so it reads like someone typing.
 - Seven custom fortunes are served once each, in order, before the configured AI (or built-in deck) takes over. The shared deck position persists in `data/state.json`.
 - The designated learning account can reply `fortune like` or `fortune dislike` after a fortune to tune future category choices; `fortune forget` clears that profile. This records explicit category feedback, not conversation text.
 - Fortunes are always positive. Health, money, legal and death questions get a kind refusal before any AI call.

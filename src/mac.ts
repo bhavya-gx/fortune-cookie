@@ -1,5 +1,6 @@
 // Run the fortune cookie straight through this Mac's Messages app.
 //   npm run mac
+import { spawn } from "node:child_process";
 import { createBot } from "./bot.ts";
 import { loadConfig } from "./config.ts";
 import { makeFortune } from "./fortune.ts";
@@ -26,9 +27,18 @@ try {
   process.exit(1);
 }
 
+// Keep the Mac awake for as long as the bot runs. -w ties caffeinate to this
+// process, so it exits by itself when the bot stops or crashes.
+if (cfg.keepAwake && process.platform === "darwin") {
+  const caffeinate = spawn("caffeinate", ["-dims", "-w", String(process.pid)], { stdio: "ignore" });
+  caffeinate.on("error", (err) => console.warn("[caffeinate] could not start:", err.message));
+  caffeinate.unref();
+}
+
 console.log("🥠 Fortune Cookie is listening to Messages on this Mac.");
 console.log(`Daily cap: ${cfg.dailyCap === 0 ? "unlimited" : `${cfg.dailyCap} per person per day`}. Unlimited numbers from .env: ${cfg.unlimitedPhones.length}. Learning number: ${cfg.learningPhone ? "set" : "none"}.`);
 console.log(`Account: ${cfg.dedicated ? "dedicated bot Apple ID (greets groups, answers any private text)" : "personal (only answers messages starting with \"fortune\" or 🥠)"}`);
+console.log(`Keep awake: ${cfg.keepAwake ? "on (caffeinate)" : "off"}`);
 console.log(`Engine: ${cfg.apiKey ? `Claude (${cfg.model})` : "built-in deck"}`);
 const groups = mac.groups(8);
 if (groups.length) console.log("Recent group chats it can answer in:\n" + groups.map((g) => `  - ${g.name}`).join("\n"));
